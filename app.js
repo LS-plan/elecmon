@@ -4,6 +4,15 @@ let allData = [];
 
 const RANGE_DAYS = { "1d": 1, "3d": 3, "7d": 7, "1m": 30, "3m": 90, "1y": 365 };
 
+// AI 接口默认配置（openclaudecode.cn Claude 外接）
+const AI_DEFAULTS = {
+  baseUrl: "https://www.openclaudecode.cn",
+  apiKey:  "sk-oekmYFVpITCc5KcmIfwuz6sJJ7pF9sDVqzsOpXHcNssitINe",
+  model:   "gpt-5.4",
+};
+// Claude 外接专用 UA（参考 openclaudecode.cn 文档 external-ua）
+const AI_UA = "claude-cli/2.0.76 (external, cli)";
+
 const ANALYZE_PROMPT = `你是一个专业的家庭用电分析助手，以下是北邮学生宿舍 10-846 的历史剩余电量数据（格式：时间 剩余电量）。
 
 请依次分析：
@@ -120,11 +129,33 @@ document.querySelectorAll(".range-btn").forEach(btn => {
   });
 });
 
+// AI 配置持久化（localStorage，回退到内置默认值）
+const LS_AI = "elecmon_ai_cfg";
+
+function loadAiConfig() {
+  const saved = JSON.parse(localStorage.getItem(LS_AI) || "{}");
+  document.getElementById("aiBaseUrl").value = saved.baseUrl ?? AI_DEFAULTS.baseUrl;
+  document.getElementById("aiApiKey").value  = saved.apiKey  ?? AI_DEFAULTS.apiKey;
+  document.getElementById("aiModel").value   = saved.model   ?? AI_DEFAULTS.model;
+}
+
+function saveAiConfig() {
+  localStorage.setItem(LS_AI, JSON.stringify({
+    baseUrl: document.getElementById("aiBaseUrl").value.trim(),
+    apiKey:  document.getElementById("aiApiKey").value.trim(),
+    model:   document.getElementById("aiModel").value.trim(),
+  }));
+}
+
+["aiBaseUrl", "aiApiKey", "aiModel"].forEach(id =>
+  document.getElementById(id).addEventListener("change", saveAiConfig)
+);
+
 // AI 分析（浏览器直连 AI API）
 document.getElementById("analyzeBtn").addEventListener("click", async () => {
   const baseUrl = document.getElementById("aiBaseUrl").value.trim().replace(/\/$/, "");
   const apiKey = document.getElementById("aiApiKey").value.trim();
-  const model = document.getElementById("aiModel").value.trim() || "gpt-4o";
+  const model = document.getElementById("aiModel").value.trim() || AI_DEFAULTS.model;
 
   if (!baseUrl || !apiKey) { alert("请填写 API Base URL 和 API Key"); return; }
 
@@ -152,7 +183,7 @@ document.getElementById("analyzeBtn").addEventListener("click", async () => {
       headers: {
         "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:149.0) Gecko/20100101 Firefox/149.0",
+        "User-Agent": AI_UA,
       },
       body: JSON.stringify({
         model,
@@ -176,6 +207,7 @@ document.getElementById("analyzeBtn").addEventListener("click", async () => {
 
 window.addEventListener("resize", () => chart?.resize());
 
+loadAiConfig();
 loadData();
 setInterval(loadData, 20 * 60 * 1000);
 
