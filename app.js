@@ -196,9 +196,11 @@ document.getElementById("analyzeBtn").addEventListener("click", async () => {
       resultDiv.textContent = `请求失败 (${resp.status})：${json.error?.message || JSON.stringify(json)}`;
       return;
     }
-    resultDiv.textContent = json?.choices?.[0]?.message?.content || JSON.stringify(json, null, 2);
+    const raw = json?.choices?.[0]?.message?.content || JSON.stringify(json, null, 2);
+    const collapsed = raw.replace(/\n{3,}/g, "\n\n");
+    resultDiv.innerHTML = marked.parse(collapsed);
   } catch (e) {
-    resultDiv.textContent = `请求出错：${e.message}\n\n提示：部分 API 不支持跨域请求（CORS），请确认服务商是否允许浏览器直连。`;
+    resultDiv.innerHTML = marked.parse(`**请求出错：** ${e.message}\n\n提示：部分 API 不支持跨域请求（CORS），请确认服务商是否允许浏览器直连。`);
   } finally {
     btn.disabled = false;
     btn.textContent = "开始 AI 分析";
