@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ElecMon - 宿舍电费监控</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+</head>
+<body>
+  <header>
+    <h1>⚡ ElecMon 电费监控</h1>
+    <p class="subtitle">北邮西土城 · 学十楼 8楼 · 10-846</p>
+  </header>
+
+  <main>
+    <!-- 当前状态卡片 -->
+    <section class="status-card">
+      <div class="stat">
+        <span class="label">剩余电量</span>
+        <span class="value" id="remaining">--</span>
+        <span class="unit">度</span>
+      </div>
+      <div class="stat">
+        <span class="label">赠送电量</span>
+        <span class="value" id="gift">--</span>
+        <span class="unit">度</span>
+      </div>
+      <div class="stat">
+        <span class="label">更新时间</span>
+        <span class="value-sm" id="updateTime">--</span>
+      </div>
+      <div class="stat">
+        <span class="label">下次采集</span>
+        <span class="value-sm" id="nextPoll">~20 分钟后</span>
+      </div>
+    </section>
+
+    <!-- 时间范围选择 -->
+    <div class="section-header">
+      <h2>历史趋势</h2>
+      <div class="range-selector">
+        <button class="range-btn" data-range="1d">1天</button>
+        <button class="range-btn" data-range="3d">3天</button>
+        <button class="range-btn active" data-range="7d">7天</button>
+        <button class="range-btn" data-range="1m">1月</button>
+        <button class="range-btn" data-range="3m">3月</button>
+        <button class="range-btn" data-range="1y">1年</button>
+      </div>
+    </div>
+
+    <!-- ECharts 图表 -->
+    <section class="chart-section">
+      <div id="chart"></div>
+      <p class="chart-empty" id="chartEmpty" style="display:none">暂无数据，等待首次采集...</p>
+    </section>
+
+    <!-- AI 分析模块 -->
+    <section class="ai-section">
+      <h2>🤖 AI 电费分析</h2>
+      <p class="ai-desc">填入 AI 接口信息，分析当前时间范围内的用电趋势与剩余天数预测。</p>
+      <div class="ai-config">
+        <div class="input-group">
+          <label>API Base URL</label>
+          <input type="text" id="aiBaseUrl" placeholder="https://api.openai.com">
+        </div>
+        <div class="input-group">
+          <label>API Key</label>
+          <input type="password" id="aiApiKey" placeholder="sk-xxx">
+        </div>
+        <div class="input-group">
+          <label>模型名称</label>
+          <input type="text" id="aiModel" placeholder="gpt-4o" value="gpt-4o">
+        </div>
+      </div>
+      <button id="analyzeBtn" class="analyze-btn">开始 AI 分析</button>
+      <div id="aiResult" class="ai-result"></div>
+    </section>
+  </main>
+
+  <footer>
+    <p>ElecMon · 每 20 分钟自动采集 · 数据仅供参考</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
