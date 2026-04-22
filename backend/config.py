@@ -1,15 +1,17 @@
 import os
-from dotenv import load_dotenv
 
-load_dotenv()
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
-BUPT_USERNAME = os.getenv("BUPT_USERNAME")
-BUPT_PASSWORD = os.getenv("BUPT_PASSWORD")
-DB_PATH = os.getenv("DB_PATH", "backend/data/elecmon.db")
-POLL_INTERVAL_MINUTES = int(os.getenv("POLL_INTERVAL_MINUTES", 20))
+BUPT_USERNAME = os.environ.get("BUPT_USERNAME", "")
+BUPT_PASSWORD = os.environ.get("BUPT_PASSWORD", "")
+HISTORY_JSON = os.environ.get("HISTORY_JSON", "data/history.json")
+MAX_RECORDS = 26280  # 约 1 年数据（每 20 分钟一条）
 
 ELEC_URL = "https://app.bupt.edu.cn/buptdf/wap/default/chong"
-AUTH_URL = "https://auth.bupt.edu.cn/authserver/login"
 
 CAMPUS = "西土城"
 APARTMENT = "学十楼"
