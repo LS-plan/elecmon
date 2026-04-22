@@ -13,9 +13,10 @@ def _login_if_needed(page):
     if "authserver/login" not in page.url:
         return
 
-    page.wait_for_load_state("domcontentloaded", timeout=15000)
-    # 登录页输入框使用 name 属性而非 id
-    page.wait_for_selector("[name=username]", state="visible", timeout=10000)
+    page.wait_for_load_state("networkidle", timeout=20000)
+    # 密码登录表单在 #default div 内，默认被隐藏（另一个 tab 覆盖）
+    # 直接通过 JS 强制显示，避免依赖 tab 点击动画
+    page.evaluate("document.getElementById('default').style.display = 'block'")
     page.fill("[name=username]", BUPT_USERNAME)
     page.fill("[name=password]", BUPT_PASSWORD)
     page.click("[name=submit]")
