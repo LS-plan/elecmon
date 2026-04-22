@@ -131,46 +131,6 @@ main {
 .poll-status.ok  { color: var(--success); }
 .poll-status.err { color: #f87171; }
 
-.pat-toggle {
-  margin-left: auto;
-  padding: 0.4rem 0.7rem;
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  color: var(--text-muted);
-  cursor: pointer;
-  font-size: 1rem;
-  transition: border-color 0.15s, color 0.15s;
-}
-
-.pat-toggle:hover { border-color: var(--accent); color: var(--accent-light); }
-
-.pat-panel {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 1rem 1.25rem;
-  display: flex;
-  align-items: flex-end;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-
-.pat-panel .input-group { flex: 1; min-width: 240px; }
-
-.pat-save-btn {
-  padding: 0.55rem 1.2rem;
-  background: var(--accent);
-  border: none;
-  border-radius: 8px;
-  color: #fff;
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.pat-save-btn:hover { background: #2563eb; }
 
 /* ─── Section Header ─── */
 .section-header {
