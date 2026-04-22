@@ -199,6 +199,11 @@ document.getElementById("analyzeBtn").addEventListener("click", async () => {
     const raw = json?.choices?.[0]?.message?.content || JSON.stringify(json, null, 2);
     const collapsed = raw.replace(/\n{3,}/g, "\n\n");
     resultDiv.innerHTML = marked.parse(collapsed);
+    fetch("/api/save-analysis", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: raw }),
+    }).catch(() => {});
   } catch (e) {
     resultDiv.innerHTML = marked.parse(`**请求出错：** ${e.message}\n\n提示：部分 API 不支持跨域请求（CORS），请确认服务商是否允许浏览器直连。`);
   } finally {
@@ -209,8 +214,26 @@ document.getElementById("analyzeBtn").addEventListener("click", async () => {
 
 window.addEventListener("resize", () => chart?.resize());
 
+async function loadSavedAnalysis() {
+  try {
+    const res = await fetch(`./data/analysis.json?t=${Date.now()}`);
+    if (!res.ok) return;
+    const { ts, content } = await res.json();
+    if (!content) return;
+    const resultDiv = document.getElementById("aiResult");
+    const collapsed = content.replace(/\n{3,}/g, "\n\n");
+    resultDiv.innerHTML = marked.parse(collapsed);
+    resultDiv.style.display = "block";
+    const hint = document.createElement("p");
+    hint.style.cssText = "margin-top:0.8em;font-size:0.78rem;color:var(--text-muted);border-top:1px solid var(--border);padding-top:0.6em";
+    hint.textContent = `上次分析时间：${ts}`;
+    resultDiv.appendChild(hint);
+  } catch (_) {}
+}
+
 loadAiConfig();
 loadData();
+loadSavedAnalysis();
 setInterval(loadData, 20 * 60 * 1000);
 
 // ─── 立刻采集 ───

@@ -17,6 +17,8 @@ except ImportError:
 from backend.poll import main as poll_once
 from backend.config import HISTORY_JSON
 
+ANALYSIS_JSON = os.path.join(os.path.dirname(HISTORY_JSON), "analysis.json")
+
 _lock = threading.Lock()
 
 
@@ -38,14 +40,19 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(204)
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.end_headers()
 
     def do_POST(self):
-        if self.path != "/api/collect":
+        if self.path == "/api/collect":
+            self._handle_collect()
+        elif self.path == "/api/save-analysis":
+            self._handle_save_analysis()
+        else:
             self.send_response(404)
             self.end_headers()
-            return
 
+    def _handle_collect(self):
         if not _lock.acquire(blocking=False):
             self._send_json(429, {"error": "采集中，请稍候再试"})
             return
@@ -58,6 +65,23 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json(500, {"error": str(e)})
         finally:
             _lock.release()
+
+    def _handle_save_analysis(self):
+        try:
+            length = int(self.headers.get("Content-Length", 0))
+            body = json.loads(self.rfile.read(length).decode())
+            content = body.get("content", "").strip()
+            if not content:
+                self._send_json(400, {"error": "content 为空"})
+                return
+            from datetime import datetime
+            record = {"ts": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "content": content}
+            os.makedirs(os.path.dirname(ANALYSIS_JSON), exist_ok=True)
+            with open(ANALYSIS_JSON, "w", encoding="utf-8") as f:
+                json.dump(record, f, ensure_ascii=False)
+            self._send_json(200, {"ok": True})
+        except Exception as e:
+            self._send_json(500, {"error": str(e)})
 
 
 if __name__ == "__main__":
