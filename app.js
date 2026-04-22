@@ -178,3 +178,85 @@ window.addEventListener("resize", () => chart?.resize());
 
 loadData();
 setInterval(loadData, 20 * 60 * 1000);
+
+// ─── 立刻采集 ───
+const GH_OWNER = "LS-plan";
+const GH_REPO  = "elecmon";
+const GH_WORKFLOW = "poll.yml";
+const PAT_KEY = "elecmon_gh_pat";
+
+function setPollStatus(msg, type = "") {
+  const el = document.getElementById("pollStatus");
+  el.textContent = msg;
+  el.className = "poll-status" + (type ? " " + type : "");
+}
+
+// PAT 面板
+const patToggleBtn = document.getElementById("patToggleBtn");
+const patPanel     = document.getElementById("patPanel");
+const ghPatInput   = document.getElementById("ghPat");
+const patSaveBtn   = document.getElementById("patSaveBtn");
+
+ghPatInput.value = localStorage.getItem(PAT_KEY) || "";
+
+patToggleBtn.addEventListener("click", () => {
+  patPanel.style.display = patPanel.style.display === "none" ? "flex" : "none";
+});
+
+patSaveBtn.addEventListener("click", () => {
+  const val = ghPatInput.value.trim();
+  if (val) {
+    localStorage.setItem(PAT_KEY, val);
+    setPollStatus("PAT 已保存", "ok");
+    patPanel.style.display = "none";
+  }
+});
+
+// 触发 workflow_dispatch
+document.getElementById("pollNowBtn").addEventListener("click", async () => {
+  const pat = localStorage.getItem(PAT_KEY);
+  if (!pat) {
+    patPanel.style.display = "flex";
+    setPollStatus("请先填写并保存 GitHub PAT（点击 ⚙ 设置）", "err");
+    return;
+  }
+
+  const btn = document.getElementById("pollNowBtn");
+  btn.disabled = true;
+  setPollStatus("正在触发采集…");
+
+  try {
+    const resp = await fetch(
+      `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/actions/workflows/${GH_WORKFLOW}/dispatches`,
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${pat}`,
+          "Accept": "application/vnd.github+json",
+          "Content-Type": "application/json",
+          "X-GitHub-Api-Version": "2022-11-28",
+        },
+        body: JSON.stringify({ ref: "main" }),
+      }
+    );
+
+    if (resp.status === 204) {
+      setPollStatus("✓ 已触发，约 2-3 分钟后数据更新…", "ok");
+      // 3 分钟后自动刷新数据
+      setTimeout(() => { loadData(); setPollStatus(""); }, 3 * 60 * 1000);
+    } else {
+      const json = await resp.json().catch(() => ({}));
+      const msg = json.message || `HTTP ${resp.status}`;
+      if (resp.status === 401) {
+        setPollStatus(`PAT 无效或已过期，请重新设置（${msg}）`, "err");
+        patPanel.style.display = "flex";
+      } else {
+        setPollStatus(`触发失败：${msg}`, "err");
+      }
+    }
+  } catch (e) {
+    setPollStatus(`网络错误：${e.message}`, "err");
+  } finally {
+    btn.disabled = false;
+  }
+});
