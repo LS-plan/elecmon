@@ -12,14 +12,27 @@ logger = logging.getLogger(__name__)
 def _login_if_needed(page):
     if "authserver/login" not in page.url:
         return
-    # 点击"密码登录" tab
-    try:
-        tab = page.locator(".content-title li", has_text="密码登录")
-        if tab.count() > 0:
-            tab.first.click()
-            page.wait_for_timeout(500)
-    except Exception:
-        pass
+
+    # 等待登录页主体加载
+    page.wait_for_load_state("domcontentloaded", timeout=15000)
+
+    # 尝试点击"密码登录" tab（默认可能是二维码）
+    for selector in [
+        "text=密码登录",
+        ".content-title li:has-text('密码登录')",
+        "a:has-text('密码登录')",
+    ]:
+        try:
+            el = page.locator(selector)
+            if el.count() > 0:
+                el.first.click()
+                break
+        except Exception:
+            continue
+
+    # 等待账号输入框出现（密码登录 tab 展开后才可见）
+    page.wait_for_selector("#username", state="visible", timeout=10000)
+
     page.fill("#username", BUPT_USERNAME)
     page.fill("#password", BUPT_PASSWORD)
     page.click("[type=submit]")
