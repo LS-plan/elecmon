@@ -1,0 +1,17 @@
+[Unit]
+Description=ElecMon 电费采集
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=__SERVICE_USER__
+WorkingDirectory=__REPO_DIR__
+EnvironmentFile=__REPO_DIR__/.env
+ExecStart=/usr/bin/python3 __REPO_DIR__/backend/poll.py
+StandardOutput=journal
+StandardError=journal
+
+# Playwright 需要显示器环境变量
+Environment=DISPLAY=:0
+Environment=PLAYWRIGHT_BROWSERS_PATH=/home/__SERVICE_USER__/.cache/ms-playwright
