@@ -38,35 +38,57 @@ def fetch_electricity() -> dict:
         page = context.new_page()
 
         page.goto(ELEC_URL, timeout=30000)
-        page.wait_for_load_state("networkidle", timeout=15000)
+        page.wait_for_load_state("networkidle", timeout=20000)
         _login_if_needed(page)
+        page.wait_for_load_state("networkidle", timeout=20000)
 
-        # 等待 select 元素加载
-        page.wait_for_selector("select", timeout=20000)
-        page.wait_for_timeout(1000)
+        # 等待自定义下拉组件加载（页面用 .search_select div + ul/li，无 <select>）
+        page.wait_for_selector(".search_list", timeout=20000)
 
-        selects = page.query_selector_all("select")
-        if len(selects) < 4:
-            raise RuntimeError(f"未找到足够的 select 元素，实际数量: {len(selects)}")
+        def pick(index: int, label: str):
+            """点击第 index 个下拉框，选择文本为 label 的 li"""
+            lists = page.query_selector_all(".search_list")
+            # 打开下拉
+            lists[index].query_selector(".search_select").click()
+            page.wait_for_timeout(600)
+            # 等待对应 li 出现（级联 AJAX 场景）
+            page.wait_for_function(
+                f"""() => {{
+                    const lis = document.querySelectorAll('.search_list')[{index}]
+                        .querySelectorAll('li');
+                    return Array.from(lis).some(li => li.textContent.trim() === '{label}');
+                }}""",
+                timeout=15000,
+            )
+            lists = page.query_selector_all(".search_list")
+            lis = lists[index].query_selector_all("li")
+            for li in lis:
+                if li.inner_text().strip() == label:
+                    li.click()
+                    return
+            raise RuntimeError(f"下拉[{index}]未找到选项: {label}")
 
-        # 依次选择：校区 → 公寓 → 楼层 → 宿舍
-        selects[0].select_option(label=CAMPUS)
+        # 校区已默认"西土城"，直接从公寓开始选
+        pick(1, APARTMENT)
         page.wait_for_timeout(1200)
-
-        selects = page.query_selector_all("select")
-        selects[1].select_option(label=APARTMENT)
+        pick(2, FLOOR)
         page.wait_for_timeout(1200)
+        pick(3, ROOM)
+        page.wait_for_timeout(800)
 
-        selects = page.query_selector_all("select")
-        selects[2].select_option(label=FLOOR)
-        page.wait_for_timeout(1200)
+        # 点击查询按钮触发 AJAX 请求
+        page.click(".search_btn")
 
-        selects = page.query_selector_all("select")
-        selects[3].select_option(label=ROOM)
-        page.wait_for_timeout(1500)
-
-        # 等待结果出现
-        page.wait_for_selector(".search_bottom", timeout=20000)
+        # 等待结果区域出现且数据已填充（span 内含有数字才算就绪）
+        page.wait_for_function(
+            "() => {"
+            "  const d = document.querySelector('.search_bottom');"
+            "  if (!d || getComputedStyle(d).display === 'none') return false;"
+            "  const spans = d.querySelectorAll('li span:last-child');"
+            "  return spans.length > 1 && /\\d/.test(spans[1].textContent);"
+            "}",
+            timeout=20000,
+        )
 
         result_div = page.query_selector(".search_bottom")
         items = result_div.query_selector_all("li span:last-child")
