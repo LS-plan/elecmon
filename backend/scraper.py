@@ -38,11 +38,13 @@ def fetch_electricity() -> dict:
         page = context.new_page()
 
         page.goto(ELEC_URL, timeout=30000)
-        page.wait_for_load_state("networkidle", timeout=15000)
+        page.wait_for_load_state("networkidle", timeout=20000)
         _login_if_needed(page)
 
+        # 登录后等待跳回电费页并渲染完成
+        page.wait_for_load_state("networkidle", timeout=20000)
         # 等待 select 元素加载
-        page.wait_for_selector("select", timeout=20000)
+        page.wait_for_selector("select", timeout=30000)
         page.wait_for_timeout(1000)
 
         selects = page.query_selector_all("select")
