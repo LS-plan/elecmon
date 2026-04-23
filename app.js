@@ -68,19 +68,24 @@ function updateStatusCard(data) {
 function buildSegmentedSeries(values) {
   const n = values.length;
 
-  // 每段斜率（values[i] - values[i+1]，正 = 消耗）
+  // 每段斜率（values[i] - values[i+1]，正 = 消耗；含 null 点的段记为 null）
   const slopes = [];
-  for (let i = 0; i < n - 1; i++) slopes.push(values[i] - values[i + 1]);
+  for (let i = 0; i < n - 1; i++) {
+    const a = values[i], b = values[i + 1];
+    slopes.push(a != null && b != null ? a - b : null);
+  }
 
-  const pos = slopes.filter(s => s > 0);
+  // 均值只统计有效消耗段（正斜率），充值（负斜率）和 null 段全部排除
+  const pos = slopes.filter(s => s != null && s > 0);
   const avg = pos.length ? pos.reduce((a, b) => a + b, 0) / pos.length : 1;
 
   function segColor(s) {
-    if (s < 0)            return "#a855f7"; // 充值 / 电量回升 → 紫
-    if (s < avg * 0.5)    return "#22c55e"; // 极低耗电 → 绿
-    if (s < avg * 1.25)   return "#3b82f6"; // 正常 → 蓝
-    if (s < avg * 2.0)    return "#f97316"; // 偏高 → 橙
-    return "#ef4444";                        // 极高 → 红
+    if (s == null)       return "#3b82f6"; // 数据缺失 → 蓝
+    if (s < 0)           return "#a855f7"; // 充值 / 电量回升 → 紫
+    if (s < avg * 0.5)   return "#22c55e"; // 极低耗电 → 绿
+    if (s < avg * 1.25)  return "#3b82f6"; // 正常 → 蓝
+    if (s < avg * 2.0)   return "#f97316"; // 偏高 → 橙
+    return "#ef4444";                       // 极高 → 红
   }
 
   // 合并连续同色段
