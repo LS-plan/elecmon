@@ -121,7 +121,7 @@ function renderChart(data) {
   empty.style.display = "none";
 
   const times  = data.map(r => r.ts);
-  const values = data.map(r => Number(r.remaining));
+  const values = data.map(r => { const v = Number(r.remaining); return isNaN(v) ? null : v; });
   const minVal = Math.min(...values);
   const maxVal = Math.max(...values);
   const pad    = (maxVal - minVal) * 0.15 || 2;
@@ -137,7 +137,8 @@ function renderChart(data) {
     tooltip: {
       trigger: "axis",
       formatter: params => {
-        const p = params.find(x => x.value !== null) ?? params[0];
+        const p = params.find(x => x.value != null && !isNaN(Number(x.value)));
+        if (!p) return "";
         return `${p.axisValue}<br/><b>剩余电量: ${Number(p.value).toFixed(2)} 度</b>`;
       },
       backgroundColor: "#1a1d2e",
