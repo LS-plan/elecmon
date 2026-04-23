@@ -73,6 +73,11 @@ function renderChart(data) {
 
   const times = data.map(r => r.ts);
   const values = data.map(r => Number(r.remaining));
+  const minVal = Math.min(...values);
+  const maxVal = Math.max(...values);
+  const pad = (maxVal - minVal) * 0.15 || 2;
+  const yMin = Math.max(0, Math.floor(minVal - pad));
+  const yMax = Math.ceil(maxVal + pad);
 
   if (!chart) chart = echarts.init(document.getElementById("chart"), "dark");
 
@@ -101,6 +106,8 @@ function renderChart(data) {
     yAxis: {
       type: "value",
       name: "度",
+      min: yMin,
+      max: yMax,
       nameTextStyle: { color: "#94a3b8", fontSize: 11 },
       axisLabel: { color: "#94a3b8", fontSize: 11 },
       splitLine: { lineStyle: { color: "#2a2d3e" } },
