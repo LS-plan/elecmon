@@ -259,6 +259,44 @@ main {
   border-color: var(--accent);
 }
 
+.custom-prompt-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+.custom-prompt-toggle input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.custom-prompt-toggle:hover span { color: var(--text); }
+
+.custom-prompt-input {
+  display: none;
+  width: 100%;
+  min-height: 80px;
+  padding: 0.6rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.88rem;
+  font-family: inherit;
+  line-height: 1.6;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.custom-prompt-input:focus { border-color: var(--accent); }
+
 .analyze-btn {
   align-self: flex-start;
   padding: 0.6rem 1.6rem;
