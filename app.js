@@ -62,6 +62,55 @@ function updateStatusCard(data) {
   document.getElementById("updateTime").textContent = latest.ts;
 }
 
+// 按耗电速率对折线分段着色
+// 速率 = 相邻两点的电量差（正值 = 消耗）
+// 颜色: 绿(<0.5x平均) / 蓝(正常) / 橙(>1.25x) / 红(>2x) / 紫(充值/回升)
+function buildSegmentedSeries(values) {
+  const n = values.length;
+
+  // 每段斜率（values[i] - values[i+1]，正 = 消耗）
+  const slopes = [];
+  for (let i = 0; i < n - 1; i++) slopes.push(values[i] - values[i + 1]);
+
+  const pos = slopes.filter(s => s > 0);
+  const avg = pos.length ? pos.reduce((a, b) => a + b, 0) / pos.length : 1;
+
+  function segColor(s) {
+    if (s < 0)            return "#a855f7"; // 充值 / 电量回升 → 紫
+    if (s < avg * 0.5)    return "#22c55e"; // 极低耗电 → 绿
+    if (s < avg * 1.25)   return "#3b82f6"; // 正常 → 蓝
+    if (s < avg * 2.0)    return "#f97316"; // 偏高 → 橙
+    return "#ef4444";                        // 极高 → 红
+  }
+
+  // 合并连续同色段
+  const groups = [];
+  let i = 0;
+  while (i < slopes.length) {
+    const c = segColor(slopes[i]);
+    let j = i;
+    while (j + 1 < slopes.length && segColor(slopes[j + 1]) === c) j++;
+    groups.push({ color: c, from: i, to: j + 1 }); // 点下标 from ~ to
+    i = j + 1;
+  }
+
+  return groups.map(g => {
+    const d = new Array(n).fill(null);
+    for (let k = g.from; k <= g.to; k++) d[k] = values[k];
+    return {
+      type: "line",
+      data: d,
+      smooth: true,
+      connectNulls: false,
+      lineStyle: { color: g.color, width: 2.5 },
+      itemStyle: { color: g.color },
+      symbol: "circle",
+      symbolSize: 5,
+      legendHoverLink: false,
+    };
+  });
+}
+
 function renderChart(data) {
   const empty = document.getElementById("chartEmpty");
   if (!data.length) {
@@ -71,22 +120,24 @@ function renderChart(data) {
   }
   empty.style.display = "none";
 
-  const times = data.map(r => r.ts);
+  const times  = data.map(r => r.ts);
   const values = data.map(r => Number(r.remaining));
   const minVal = Math.min(...values);
   const maxVal = Math.max(...values);
-  const pad = (maxVal - minVal) * 0.15 || 2;
-  const yMin = Math.max(0, Math.floor(minVal - pad));
-  const yMax = Math.ceil(maxVal + pad);
+  const pad    = (maxVal - minVal) * 0.15 || 2;
+  const yMin   = Math.max(0, Math.floor(minVal - pad));
+  const yMax   = Math.ceil(maxVal + pad);
 
   if (!chart) chart = echarts.init(document.getElementById("chart"), "dark");
+
+  const series = buildSegmentedSeries(values);
 
   chart.setOption({
     backgroundColor: "transparent",
     tooltip: {
       trigger: "axis",
       formatter: params => {
-        const p = params[0];
+        const p = params.find(x => x.value !== null) ?? params[0];
         return `${p.axisValue}<br/><b>剩余电量: ${Number(p.value).toFixed(2)} 度</b>`;
       },
       backgroundColor: "#1a1d2e",
@@ -112,24 +163,7 @@ function renderChart(data) {
       axisLabel: { color: "#94a3b8", fontSize: 11 },
       splitLine: { lineStyle: { color: "#2a2d3e" } },
     },
-    series: [{
-      type: "line",
-      data: values,
-      smooth: true,
-      lineStyle: { color: "#3b82f6", width: 2.5 },
-      areaStyle: {
-        color: {
-          type: "linear", x: 0, y: 0, x2: 0, y2: 1,
-          colorStops: [
-            { offset: 0, color: "rgba(59,130,246,0.35)" },
-            { offset: 1, color: "rgba(59,130,246,0)" },
-          ],
-        },
-      },
-      symbol: "circle",
-      symbolSize: 5,
-      itemStyle: { color: "#60a5fa" },
-    }],
+    series,
   }, true);
 }
 
